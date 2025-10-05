@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share My Location</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    h1 { color: #333; margin-bottom: 10px; text-align: center; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 40px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: block;
+      margin: 10px auto;
+      transition: transform 0.2s;
+      width: 100%;
+      max-width: 300px;
+    }
+    
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    .send-btn { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); }
+    .result { margin-top: 30px; display: none; }
+    .loading { text-align: center; color: #667eea; margin-top: 20px; display: none; }
+    
+    .info-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; }
+    .info-box {
+      background: #f7f9fc;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .label {
+      font-size: 12px;
+      color: #667eea;
+      font-weight: 600;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    
+    .value { 
+      font-size: 16px; 
+      color: #333; 
+      word-break: break-word;
+    }
+    
+    .success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border-left: 4px solid #4caf50;
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 4px solid #f5576c;
+    }
+
+    .share-link-box {
+      background: #fff9e6;
+      border: 2px solid #ffc107;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .share-link-box h3 {
+      color: #856404;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .link-display {
+      background: white;
+      padding: 12px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+      margin: 10px 0;
+    }
+
+    .copy-link-btn {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .mode-btn {
+      padding: 12px 30px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .mode-content { display: none; }
+    .mode-content.active { display: block; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Location Sharing</h1>
+    <p class="subtitle">Share your location or receive location from others</p>
+    
+    <div class="mode-selector">
+      <button class="mode-btn active" onclick="switchMode('share')">Share My Location</button>
+      <button class="mode-btn" onclick="switchMode('receive')">Receive Location</button>
+    </div>
+
+    <!-- Share Mode -->
+    <div id="shareMode" class="mode-content active">
+      <p style="text-align: center; color: #666; margin-bottom: 20px;">
+        Click below to share your current location via email or WhatsApp
+      </p>
+      <button onclick="getMyLocation()">Get My Location</button>
+      <div class="loading" id="shareLoading">Getting your location...</div>
+      <div class="result" id="shareResult"></div>
+    </div>
+
+    <!-- Receive Mode -->
+    <div id="receiveMode" class="mode-content">
+      <div class="share-link-box">
+        <h3>Your Personal Location Request Link:</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+          Send this link to anyone. When they click it and share their location, 
+          you'll receive it via email or WhatsApp.
+        </p>
+        <div class="link-display" id="shareableLink">Loading...</div>
+        <button class="copy-link-btn" onclick="copyShareLink()">Copy Link</button>
+        
+        <div style="margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 5px;">
+          <strong style="color: #1565c0;">How to use:</strong>
+          <ol style="margin-top: 8px; margin-left: 20px; font-size: 13px; color: #555;">
+            <li>Copy the link above</li>
+            <li>Send it to the person via WhatsApp, SMS, or email</li>
+            <li>They click the link and share their location</li>
+            <li>You receive their location details</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPosition = null;
+    const YOUR_EMAIL = 'your-email@example.com'; // Change this to your email
+
+    function switchMode(mode) {
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+      
+      if (mode === 'share') {
+        document.querySelector('.mode-btn:first-child').classList.add('active');
+        document.getElementById('shareMode').classList.add('active');
+      } else {
+        document.querySelector('.mode-btn:last-child').classList.add('active');
+        document.getElementById('receiveMode').classList.add('active');
+        generateShareableLink();
+      }
+    }
+
+    function generateShareableLink() {
+      const currentUrl = window.location.href.split('?')[0];
+      const shareLink = `${currentUrl}?mode=send&to=${encodeURIComponent(YOUR_EMAIL)}`;
+      document.getElementById('shareableLink').textContent = shareLink;
+    }
+
+    function copyShareLink() {
+      const linkText = document.getElementById('shareableLink').textContent;
+      navigator.clipboard.writeText(linkText).then(() => {
+        showSuccessMessage('Link copied! Send it to anyone to request their location.');
+      });
+    }
+
+    // Check if opened via share link
+    window.addEventListener('load', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'send') {
+        switchMode('share');
+        showInfo('Someone requested your location. Click below to share it with them.');
+      }
+    });
+
+    function showInfo(message) {
+      const infoDiv = document.createElement('div');
+      infoDiv.style.cssText = 'background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;';
+      infoDiv.textContent = message;
+      document.getElementById('shareMode').prepend(infoDiv);
+    }
+
+    function showSuccessMessage(message) {
+      const successDiv = document.createElement('div');
+      successDiv.className = 'success';
+      successDiv.textContent = message;
+      document.querySelector('.container').appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 4000);
+    }
+
+    function showErrorMessage(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.textContent = message;
+      document.querySelector('.container').appendChild(errorDiv);
+      setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    function getMyLocation() {
+      const loading = document.getElementById('shareLoading');
+      const result = document.getElementById('shareResult');
+      
+      if (!navigator.geolocation) {
+        showErrorMessage('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      loading.style.display = 'block';
+      result.style.display = 'none';
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          currentPosition = position;
+          showLocationDetails(position);
+          loading.style.display = 'none';
+        },
+        (error) => {
+          loading.style.display = 'none';
+          showErrorMessage('Unable to get location. Please allow location access.');
+        },
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+      );
+    }
+
+    function showLocationDetails(position) {
+      const result = document.getElementById('shareResult');
+      result.style.display = 'block';
+
+      const lat = position.coords.latitude.toFixed(6);
+      const lng = position.coords.longitude.toFixed(6);
+      const accuracy = position.coords.accuracy.toFixed(2);
+      const timestamp = new Date().toLocaleString();
+      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      
+      let html = '<div class="info-grid">';
+      html += `
+        <div class="info-box">
+          <div class="label">Latitude</div>
+          <div class="value">${lat}</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Longitude</div>
+          <div class="value">${lng}</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Accuracy</div>
+          <div class="value">${accuracy} meters</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Time</div>
+          <div class="value">${timestamp}</div>
+        </div>
+      `;
+      html += '</div>';
+      
+      html += `
+        <button class="send-btn" onclick="sendViaEmail()">Send via Email</button>
+        <button class="send-btn" onclick="sendViaWhatsApp()">Send via WhatsApp</button>
+      `;
+      
+      result.innerHTML = html;
+    }
+
+    function sendViaEmail() {
+      if (!currentPosition) return;
+
+      const lat = currentPosition.coords.latitude.toFixed(6);
+      const lng = currentPosition.coords.longitude.toFixed(6);
+      const accuracy = currentPosition.coords.accuracy.toFixed(2);
+      const timestamp = new Date().toLocaleString();
+      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const recipientEmail = urlParams.get('to') || '';
+
+      const subject = 'Location Shared With You';
+      const body = `Someone shared their location with you:%0D%0A%0D%0A` +
+                  `Latitude: ${lat}%0D%0A` +
+                  `Longitude: ${lng}%0D%0A` +
+                  `Accuracy: ${accuracy} meters%0D%0A` +
+                  `Time: ${timestamp}%0D%0A%0D%0A` +
+                  `View on Google Maps:%0D%0A${mapsUrl}`;
+
+      window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+    }
+
+    function sendViaWhatsApp() {
+      if (!currentPosition) return;
+
+      const lat = currentPosition.coords.latitude.toFixed(6);
+      const lng = currentPosition.coords.longitude.toFixed(6);
+      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+      const text = `Here's my location:\n\nLatitude: ${lat}\nLongitude: ${lng}\n\nView on map: ${mapsUrl}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      
+      window.open(whatsappUrl, '_blank');
+    }
+  </script>
+</body>
+</html>
